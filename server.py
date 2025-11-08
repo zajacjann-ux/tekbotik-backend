@@ -79,6 +79,6 @@ PRICELIST: {pricelist_text}"""
             ],
             temperature=0.2,
         )
-        return {"reply": completion.choices[0].message.content.strip()}
+        return {"reply": completion["choices"][0]["message"]["content"].strip()}
     except Exception as e:
         return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
