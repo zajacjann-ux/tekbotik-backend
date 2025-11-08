@@ -70,7 +70,7 @@ PRICELIST: {pricelist_text}"""
     user_msg = f"Language: {payload.language}\nQuestion: {payload.question}"
 
     try:
-        completion = client.chat.completions.create(
+       completion = openai.ChatCompletion.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
