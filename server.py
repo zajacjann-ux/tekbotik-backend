@@ -69,16 +69,16 @@ PRICELIST: {pricelist_text}"""
 
     user_msg = f"Language: {payload.language}\nQuestion: {payload.question}"
 
-    try:
-       completion = openai.ChatCompletion.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": context},
-                {"role": "user", "content": user_msg},
-            ],
-            temperature=0.2,
-        )
-        return {"reply": completion["choices"][0]["message"]["content"].strip()}
-    except Exception as e:
-        return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
+try:
+    completion = openai.ChatCompletion.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": context},
+            {"role": "user", "content": user_msg},
+        ],
+        temperature=0.2,
+    )
+    return {"reply": completion["choices"][0]["message"]["content"].strip()}
+except Exception as e:
+    return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
