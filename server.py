@@ -90,3 +90,35 @@ PRICELIST: {pricelist_text}"""
         return {"reply": completion["choices"][0]["message"]["content"].strip()}
     except Exception as e:
         return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
+
+# --- PDF PRICE LIST MANAGEMENT ---
+from fastapi import UploadFile, File, Form
+import fitz  # PyMuPDF
+import os
+
+UPLOAD_DIR = "/tmp/pricelists"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+PRICELISTS = {}
+
+@app.post("/upload-pricelist")
+async def upload_pricelist(file: UploadFile = File(...), site_url: str = Form(...)):
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+
+    text = ""
+    try:
+        doc = fitz.open(file_path)
+        for page in doc:
+            text += page.get_text()
+        PRICELISTS[site_url] = text
+    except Exception as e:
+        return {"error": str(e)}
+
+    return {"status": "ok", "filename": file.filename, "text_length": len(text)}
+
+@app.post("/delete-pricelist")
+async def delete_pricelist(site_url: str = Form(...)):
+    PRICELISTS.pop(site_url, None)
+    return {"status": "deleted"}
+
