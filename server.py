@@ -84,49 +84,63 @@ async def chat(payload: ChatPayload):
     if not OPENAI_API_KEY:
         return JSONResponse({"reply": "Missing OpenAI API key on server."}, status_code=500)
 
-    site_text = (payload.site_text or "")[:16000]
-    wp_knowledge = (payload.wp_knowledge or "")[:180000]
+    # 1️⃣ Získaj dáta z payloadu
+    site_text = (payload.site_text or "")[:12000]
+    wp_knowledge = (payload.wp_knowledge or "")[:30000]
+    site_url = payload.site_url or ""
+    language = payload.language or "sk"
 
-    # 🔹 Načítaj uložený text cenníka (ak bol nahratý)
-    pdf_text = PRICELISTS.get(payload.site_url or "", "")
+    # 2️⃣ Načítaj cenník z pamäte (ak bol nahratý)
+    pricelist_text = PRICELISTS.get(site_url, "")
 
-    # 🔹 Ak používateľ poslal cenník priamo v base64 (fallback)
-    pricelist_text = ""
-    if payload.pricelist:
+    # 3️⃣ Ak prišiel cenník aj priamo v base64, dekóduj ho
+    if not pricelist_text and payload.pricelist:
         try:
-            raw = base64.b64decode(payload.pricelist.base64)
-            pricelist_text = f"[Pricelist loaded: {payload.pricelist.name}, {len(raw)} bytes]"
-        except Exception:
-            pricelist_text = "[Failed to read pricelist]"
+            import fitz  # PyMuPDF
+            import base64
+            import io
 
-    # 🔹 Zloženie kontextu pre AI
-    full_context = f"""
+            raw = base64.b64decode(payload.pricelist.base64)
+            pdf = fitz.open(stream=io.BytesIO(raw), filetype="pdf")
+            pricelist_text = ""
+            for page in pdf:
+                pricelist_text += page.get_text()
+            PRICELISTS[site_url] = pricelist_text
+        except Exception as e:
+            print(f"[PDF decode error] {e}")
+
+    # 4️⃣ Poskladaj kontext pre OpenAI
+    context = f"""
 [CONTEXT]
-SITE_URL: {payload.site_url}
+SITE_URL: {site_url}
 PAGE_TEXT: {site_text}
 WP_KNOWLEDGE: {wp_knowledge}
-CENNÍK: {pdf_text or pricelist_text}
-"""
+PRICELIST_TEXT: {pricelist_text[:15000]}  # max 15k znakov
+""".strip()
 
     system_prompt = (
         "You are TEKBOTIK, a helpful AI assistant for websites. "
-        "Answer only from the provided context. "
+        "If the context includes a pricelist or PDF text, use it to answer questions about prices. "
         "If unsure, say you don't know. "
-        "Prefer Slovak language when language=sk."
+        "Answer in Slovak when language=sk."
     )
 
-    user_msg = f"Language: {payload.language}\nQuestion: {payload.question}"
+    user_msg = f"Language: {language}\nQuestion: {payload.question}"
 
     try:
+        import openai
         completion = openai.ChatCompletion.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": full_context},
+                {"role": "user", "content": context},
                 {"role": "user", "content": user_msg},
             ],
             temperature=0.2,
         )
-        return {"reply": completion["choices"][0]["message"]["content"].strip()}
+
+        reply = completion["choices"][0]["message"]["content"].strip()
+        return {"reply": reply}
+
     except Exception as e:
         return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
