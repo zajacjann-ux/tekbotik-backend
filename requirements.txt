@@ -3,3 +3,4 @@ starlette==0.27.0
 uvicorn==0.30.0
 openai==0.27.0
 pydantic==1.10.14
+PyMuPDF
