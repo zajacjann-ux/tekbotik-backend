@@ -38,6 +38,7 @@ UPLOAD_DIR = "/tmp/pricelists"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 PRICELISTS = {}  # {site_url: text_from_pdf}
 
+
 @app.post("/upload-pricelist")
 async def upload_pricelist(file: UploadFile = File(...), site_url: str = Form(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
@@ -55,6 +56,7 @@ async def upload_pricelist(file: UploadFile = File(...), site_url: str = Form(..
 
     return {"status": "ok", "filename": file.filename, "text_length": len(text)}
 
+
 @app.post("/delete-pricelist")
 async def delete_pricelist(site_url: str = Form(...)):
     PRICELISTS.pop(site_url, None)
@@ -67,6 +69,7 @@ class Pricelist(BaseModel):
     mime: str
     base64: str
 
+
 class ChatPayload(BaseModel):
     question: str
     site_url: Optional[str] = None
@@ -75,9 +78,11 @@ class ChatPayload(BaseModel):
     pricelist: Optional[Pricelist] = None
     language: Optional[str] = "sk"
 
+
 @app.get("/health")
 def health():
     return {"ok": True, "model": MODEL}
+
 
 @app.post("/chat")
 async def chat(payload: ChatPayload):
@@ -96,10 +101,6 @@ async def chat(payload: ChatPayload):
     # 3️⃣ Ak prišiel cenník aj priamo v base64, dekóduj ho
     if not pricelist_text and payload.pricelist:
         try:
-            import fitz  # PyMuPDF
-            import base64
-            import io
-
             raw = base64.b64decode(payload.pricelist.base64)
             pdf = fitz.open(stream=io.BytesIO(raw), filetype="pdf")
             pricelist_text = ""
@@ -118,18 +119,17 @@ WP_KNOWLEDGE: {wp_knowledge}
 PRICELIST_TEXT: {pricelist_text[:15000]}  # max 15k znakov
 """.strip()
 
-system_prompt = (
-    "You are TEKBOTIK, a friendly Slovak AI assistant for websites. "
-    "Answer only from the provided context. "
-    "If you cannot find the answer, reply exactly: "
-    "'Prepáč, s týmto si nie som istý, prosím zanechaj email, pošlem ti odpoveď, hneď ako ju preverím'. "
-    "Prefer Slovak language when language=sk."
-)
+    system_prompt = (
+        "You are TEKBOTIK, a friendly Slovak AI assistant for websites. "
+        "Answer only from the provided context. "
+        "If you cannot find the answer, reply exactly: "
+        "'Prepáč, s týmto si nie som istý, prosím zanechaj email, pošlem ti odpoveď, hneď ako ju preverím'. "
+        "Prefer Slovak language when language=sk."
+    )
 
-user_msg = f"Language: {language}\nQuestion: {payload.question}"
+    user_msg = f"Language: {language}\nQuestion: {payload.question}"
 
     try:
-    import openai
         completion = openai.ChatCompletion.create(
             model=MODEL,
             messages=[
@@ -141,7 +141,7 @@ user_msg = f"Language: {language}\nQuestion: {payload.question}"
         )
 
         reply = completion["choices"][0]["message"]["content"].strip()
-    return {"reply": reply}
+        return {"reply": reply}
 
     except Exception as e:
-    return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
+        return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
