@@ -126,7 +126,7 @@ system_prompt = (
     "Prefer Slovak language when language=sk."
 )
 
-    user_msg = f"Language: {language}\nQuestion: {payload.question}"
+user_msg = f"Language: {language}\nQuestion: {payload.question}"
 
     try:
         import openai
