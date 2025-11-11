@@ -11,10 +11,10 @@ import pkg_resources
 
 print("=== PACKAGE VERSIONS ===")
 for name in ["fastapi", "pydantic", "starlette"]:
-try:
-    print(name, pkg_resources.get_distribution(name).version)
-except Exception:
-    print(name, "NOT FOUND")
+    try:
+        print(name, pkg_resources.get_distribution(name).version)
+    except Exception:
+        print(name, "NOT FOUND")
 print("=========================")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
