@@ -128,8 +128,8 @@ system_prompt = (
 
 user_msg = f"Language: {language}\nQuestion: {payload.question}"
 
-    try:
-        import openai
+try:
+    import openai
         completion = openai.ChatCompletion.create(
             model=MODEL,
             messages=[
@@ -141,7 +141,7 @@ user_msg = f"Language: {language}\nQuestion: {payload.question}"
         )
 
         reply = completion["choices"][0]["message"]["content"].strip()
-        return {"reply": reply}
+    return {"reply": reply}
 
     except Exception as e:
-        return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
+    return JSONResponse({"reply": f"Server error: {e}"}, status_code=500)
