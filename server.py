@@ -95,7 +95,7 @@ async def chat(payload: ChatPayload):
 
     # 3️⃣ Ak prišiel cenník aj priamo v base64, dekóduj ho
     if not pricelist_text and payload.pricelist:
-        try:
+    try:
             import fitz  # PyMuPDF
             import base64
             import io
